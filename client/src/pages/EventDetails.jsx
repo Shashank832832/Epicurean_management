@@ -68,12 +68,11 @@ const EventDetails = () => {
       const hh = String(d.getHours()).padStart(2, '0');
       const min = String(d.getMinutes()).padStart(2, '0');
 
-      let endHh = hh;
-      let endMin = min;
+      let durationHours = 1;
       if (eventData.endDate) {
         const ed = new Date(eventData.endDate);
-        endHh = String(ed.getHours()).padStart(2, '0');
-        endMin = String(ed.getMinutes()).padStart(2, '0');
+        durationHours = (ed.getTime() - d.getTime()) / (1000 * 60 * 60);
+        if (durationHours <= 0) durationHours = 1;
       }
       
       setEditFormData({
@@ -82,7 +81,7 @@ const EventDetails = () => {
         venue: eventData.venue || '',
         date: `${yyyy}-${mm}-${dd}`,
         startTime: `${hh}:${min}`,
-        endTime: `${endHh}:${endMin}`,
+        duration: durationHours,
         expectedParticipants: eventData.expectedParticipants || 0,
         status: eventData.status
       });
@@ -103,14 +102,15 @@ const EventDetails = () => {
 
   const handleEditSubmit = (e) => {
     e.preventDefault();
-    if (editFormData.date && editFormData.startTime && editFormData.endTime) {
+    if (editFormData.date && editFormData.startTime && editFormData.duration) {
       const startStr = `${editFormData.date}T${editFormData.startTime}:00`;
-      const endStr = `${editFormData.date}T${editFormData.endTime}:00`;
+      const startDate = new Date(startStr);
+      const endDate = new Date(startDate.getTime() + editFormData.duration * 60 * 60 * 1000);
       
       const updatedData = {
         ...editFormData,
-        date: new Date(startStr).toISOString(),
-        endDate: new Date(endStr).toISOString(),
+        date: startDate.toISOString(),
+        endDate: endDate.toISOString(),
       };
       
       updateEventMutation.mutate(updatedData);
@@ -247,8 +247,8 @@ const EventDetails = () => {
                       <input type="time" required value={editFormData.startTime || ''} onChange={(e) => setEditFormData({ ...editFormData, startTime: e.target.value })} className="w-full px-4 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-white color-scheme-light dark:color-scheme-dark" />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">End Time</label>
-                      <input type="time" required value={editFormData.endTime || ''} onChange={(e) => setEditFormData({ ...editFormData, endTime: e.target.value })} className="w-full px-4 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-white color-scheme-light dark:color-scheme-dark" />
+                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Duration (Hours)</label>
+                      <input type="number" min="0.5" step="0.5" required value={editFormData.duration || 1} onChange={(e) => setEditFormData({ ...editFormData, duration: parseFloat(e.target.value) })} className="w-full px-4 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-white color-scheme-light dark:color-scheme-dark" />
                     </div>
                   </div>
                 </div>
