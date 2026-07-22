@@ -10,6 +10,9 @@ import { Loader2 } from 'lucide-react';
 const Calendar = () => {
   const calendarRef = useRef(null);
   const queryClient = useQueryClient();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(null);
+  const [newEvent, setNewEvent] = useState({ title: '', allDay: false });
   const [isDayDetailsModalOpen, setIsDayDetailsModalOpen] = useState(false);
 
   const { data: eventsData, isLoading } = useQuery({
