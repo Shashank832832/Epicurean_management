@@ -12,7 +12,7 @@ const Calendar = () => {
   const queryClient = useQueryClient();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState(null);
-  const [newEvent, setNewEvent] = useState({ title: '' });
+  const [newEvent, setNewEvent] = useState({ title: '', startTime: '', duration: 1 });
   const [isDayDetailsModalOpen, setIsDayDetailsModalOpen] = useState(false);
 
   const { data: eventsData, isLoading } = useQuery({
@@ -56,7 +56,7 @@ const Calendar = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['events'] });
       setIsModalOpen(false);
-      setNewEvent({ title: '' });
+      setNewEvent({ title: '', startTime: '', duration: 1 });
     }
   });
 
@@ -77,7 +77,7 @@ const Calendar = () => {
 
   const handleOpenAddEvent = () => {
     setIsDayDetailsModalOpen(false);
-    setNewEvent({ title: '' });
+    setNewEvent({ title: '', startTime: '', duration: 1 });
     setIsModalOpen(true);
   };
 
@@ -103,11 +103,15 @@ const Calendar = () => {
 
   const handleSaveEvent = (e) => {
     e.preventDefault();
-    if (newEvent.title) {
+    if (newEvent.title && selectedDate && newEvent.startTime && newEvent.duration) {
+      const startStr = `${selectedDate.startStr}T${newEvent.startTime}:00`;
+      const startDate = new Date(startStr);
+      const endDate = new Date(startDate.getTime() + newEvent.duration * 60 * 60 * 1000);
+      
       createEventMutation.mutate({
         title: newEvent.title,
-        date: selectedDate.startStr,
-        endDate: selectedDate.endStr
+        date: startDate.toISOString(),
+        endDate: endDate.toISOString()
       });
       let calendarApi = selectedDate.view.calendar;
       calendarApi.unselect();
@@ -233,6 +237,34 @@ const Calendar = () => {
                   className="w-full px-4 py-2 border border-slate-300 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
                   placeholder="e.g. Masterchef Competition"
                 />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                    Start Time
+                  </label>
+                  <input
+                    type="time"
+                    required
+                    value={newEvent.startTime}
+                    onChange={(e) => setNewEvent({ ...newEvent, startTime: e.target.value })}
+                    className="w-full px-4 py-2 border border-slate-300 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                    Duration (Hours)
+                  </label>
+                  <input
+                    type="number"
+                    min="0.5"
+                    step="0.5"
+                    required
+                    value={newEvent.duration}
+                    onChange={(e) => setNewEvent({ ...newEvent, duration: parseFloat(e.target.value) })}
+                    className="w-full px-4 py-2 border border-slate-300 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
+                  />
+                </div>
               </div>
               <div className="flex gap-3 justify-end pt-4">
                 <button
