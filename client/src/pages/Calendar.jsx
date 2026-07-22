@@ -16,8 +16,10 @@ const Calendar = () => {
     queryKey: ['events'],
     queryFn: async () => {
       const { data } = await api.get('/events');
-      // Format for FullCalendar
-      return data.data.map(event => {
+      return data;
+    },
+    select: (data) => {
+      return (data?.data || []).map(event => {
         const startStr = new Date(event.date).toISOString().slice(0, 10);
         let endStr = event.endDate ? new Date(event.endDate).toISOString().slice(0, 10) : startStr;
         
