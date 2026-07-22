@@ -21,10 +21,6 @@ const eventSchema = new mongoose.Schema({
   endDate: {
     type: Date
   },
-  allDay: {
-    type: Boolean,
-    default: false
-  },
   objective: {
     type: String,
     trim: true
