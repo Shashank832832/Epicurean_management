@@ -12,7 +12,7 @@ const Calendar = () => {
   const queryClient = useQueryClient();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState(null);
-  const [newEvent, setNewEvent] = useState({ title: '', allDay: false });
+  const [newEvent, setNewEvent] = useState({ title: '' });
   const [isDayDetailsModalOpen, setIsDayDetailsModalOpen] = useState(false);
 
   const { data: eventsData, isLoading } = useQuery({
@@ -24,12 +24,10 @@ const Calendar = () => {
           id: event._id,
           title: event.title,
           start: event.date,
-          // If endDate is practically the same as date (or missing), don't pass end to FullCalendar so it renders a 1-day block correctly for allDay
-          end: (event.endDate && event.endDate !== event.date) ? event.endDate : undefined,
-          allDay: event.allDay,
+          end: event.endDate,
           backgroundColor: event.color || '#F97316',
           borderColor: event.color || '#F97316',
-          originalEvent: event // store original to display in modal
+          originalEvent: event
         };
       });
     }
@@ -58,7 +56,7 @@ const Calendar = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['events'] });
       setIsModalOpen(false);
-      setNewEvent({ title: '', allDay: false });
+      setNewEvent({ title: '' });
     }
   });
 
@@ -79,7 +77,7 @@ const Calendar = () => {
 
   const handleOpenAddEvent = () => {
     setIsDayDetailsModalOpen(false);
-    setNewEvent(prev => ({ ...prev, allDay: selectedDate?.allDay || false }));
+    setNewEvent({ title: '' });
     setIsModalOpen(true);
   };
 
@@ -88,8 +86,7 @@ const Calendar = () => {
       id: dropInfo.event.id,
       eventData: {
         date: dropInfo.event.startStr,
-        endDate: dropInfo.event.endStr || dropInfo.event.startStr,
-        allDay: dropInfo.event.allDay
+        endDate: dropInfo.event.endStr || dropInfo.event.startStr
       }
     });
   };
@@ -110,8 +107,7 @@ const Calendar = () => {
       createEventMutation.mutate({
         title: newEvent.title,
         date: selectedDate.startStr,
-        endDate: selectedDate.endStr,
-        allDay: newEvent.allDay
+        endDate: selectedDate.endStr
       });
       let calendarApi = selectedDate.view.calendar;
       calendarApi.unselect();
@@ -158,9 +154,11 @@ const Calendar = () => {
             editable={true}
             selectable={true}
             selectMirror={true}
-            dayMaxEvents={false} /* Disabled overflow limit */
+            dayMaxEvents={false}
             weekends={true}
             events={combinedEvents}
+            displayEventTime={false}
+            eventDisplay="block"
             select={handleDateSelect}
             eventDrop={handleEventDrop}
             eventResize={handleEventResize}
@@ -187,7 +185,7 @@ const Calendar = () => {
                     <div key={evt.id} className="p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg border-l-4" style={{ borderColor: evt.backgroundColor || '#F97316' }}>
                       <p className="font-bold text-slate-800 dark:text-slate-200">{evt.title}</p>
                       <p className="text-xs text-slate-500 mt-1">
-                        {evt.allDay ? 'All Day' : new Date(evt.start || evt.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        {new Date(evt.start || evt.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </p>
                     </div>
                   ))
@@ -235,18 +233,6 @@ const Calendar = () => {
                   className="w-full px-4 py-2 border border-slate-300 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
                   placeholder="e.g. Masterchef Competition"
                 />
-              </div>
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  id="allDay"
-                  checked={newEvent.allDay}
-                  onChange={(e) => setNewEvent({ ...newEvent, allDay: e.target.checked })}
-                  className="h-4 w-4 text-primary focus:ring-primary border-slate-300 rounded"
-                />
-                <label htmlFor="allDay" className="ml-2 block text-sm text-slate-700 dark:text-slate-300">
-                  All-day event
-                </label>
               </div>
               <div className="flex gap-3 justify-end pt-4">
                 <button

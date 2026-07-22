@@ -77,8 +77,7 @@ const EventDetails = () => {
         date: `${yyyy}-${mm}-${dd}`,
         time: `${hh}:${min}`,
         expectedParticipants: eventData.expectedParticipants || 0,
-        status: eventData.status,
-        allDay: eventData.allDay || false
+        status: eventData.status
       });
     }
   }, [eventData]);
@@ -97,19 +96,17 @@ const EventDetails = () => {
 
   const handleEditSubmit = (e) => {
     e.preventDefault();
-    const combinedStr = editFormData.allDay 
-      ? `${editFormData.date}T00:00:00` 
-      : `${editFormData.date}T${editFormData.time || '12:00'}:00`;
-    
-    const parsedDate = new Date(combinedStr);
-    
-    const updatedData = {
-      ...editFormData,
-      date: parsedDate.toISOString(),
-      endDate: editFormData.allDay ? parsedDate.toISOString() : undefined,
-    };
-    
-    updateEventMutation.mutate(updatedData);
+    if (editFormData.date && editFormData.time) {
+      const combinedStr = `${editFormData.date}T${editFormData.time}:00`;
+      const parsedDate = new Date(combinedStr);
+      
+      const updatedData = {
+        ...editFormData,
+        date: parsedDate.toISOString(),
+      };
+      
+      updateEventMutation.mutate(updatedData);
+    }
   };
 
   return (
@@ -237,21 +234,8 @@ const EventDetails = () => {
                   
                   <div>
                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Time</label>
-                    <input type="time" required={!editFormData.allDay} value={editFormData.time || ''} onChange={(e) => setEditFormData({ ...editFormData, time: e.target.value })} className="w-full px-4 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-white color-scheme-light dark:color-scheme-dark" disabled={editFormData.allDay} />
+                    <input type="time" required value={editFormData.time || ''} onChange={(e) => setEditFormData({ ...editFormData, time: e.target.value })} className="w-full px-4 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-white color-scheme-light dark:color-scheme-dark" />
                   </div>
-                </div>
-                
-                <div className="col-span-1 md:col-span-2 flex items-center mb-2">
-                  <input
-                    type="checkbox"
-                    id="editAllDay"
-                    checked={editFormData.allDay || false}
-                    onChange={(e) => setEditFormData({ ...editFormData, allDay: e.target.checked })}
-                    className="h-4 w-4 text-primary focus:ring-primary border-slate-300 rounded"
-                  />
-                  <label htmlFor="editAllDay" className="ml-2 block text-sm text-slate-700 dark:text-slate-300">
-                    All-day event
-                  </label>
                 </div>
                 
                 <div>

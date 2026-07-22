@@ -7,7 +7,7 @@ import api from '../services/api';
 const EventsList = () => {
   const queryClient = useQueryClient();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [newEvent, setNewEvent] = useState({ title: '', date: '', time: '', allDay: false });
+  const [newEvent, setNewEvent] = useState({ title: '', date: '', time: '' });
 
   const { data: eventsResponse, isLoading } = useQuery({
     queryKey: ['events'],
@@ -22,24 +22,19 @@ const EventsList = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['events'] });
       setIsModalOpen(false);
-      setNewEvent({ title: '', date: '', time: '', allDay: false });
+      setNewEvent({ title: '', date: '', time: '' });
     }
   });
 
   const handleSaveEvent = (e) => {
     e.preventDefault();
-    if (newEvent.title && newEvent.date) {
-      const combinedStr = newEvent.allDay 
-        ? `${newEvent.date}T00:00:00` 
-        : `${newEvent.date}T${newEvent.time || '12:00'}:00`;
-      
+    if (newEvent.title && newEvent.date && newEvent.time) {
+      const combinedStr = `${newEvent.date}T${newEvent.time}:00`;
       const parsedDate = new Date(combinedStr);
       
       createEventMutation.mutate({
         title: newEvent.title,
         date: parsedDate.toISOString(),
-        endDate: newEvent.allDay ? parsedDate.toISOString() : undefined,
-        allDay: newEvent.allDay
       });
     }
   };
@@ -82,7 +77,6 @@ const EventsList = () => {
                 }`}>
                   {event.status}
                 </span>
-                {event.allDay && <span className="text-xs text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">All Day</span>}
               </div>
               
               <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2 group-hover:text-primary transition-colors">{event.title}</h3>
@@ -152,33 +146,18 @@ const EventsList = () => {
                   />
                 </div>
                 
-                {!newEvent.allDay && (
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                      Time
-                    </label>
-                    <input
-                      type="time"
-                      required={!newEvent.allDay}
-                      value={newEvent.time}
-                      onChange={(e) => setNewEvent({ ...newEvent, time: e.target.value })}
-                      className="w-full px-4 py-2 border border-slate-300 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary bg-white dark:bg-slate-900 text-slate-900 dark:text-white color-scheme-light dark:color-scheme-dark"
-                    />
-                  </div>
-                )}
-              </div>
-
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  id="allDayEvents"
-                  checked={newEvent.allDay}
-                  onChange={(e) => setNewEvent({ ...newEvent, allDay: e.target.checked })}
-                  className="h-4 w-4 text-primary focus:ring-primary border-slate-300 rounded"
-                />
-                <label htmlFor="allDayEvents" className="ml-2 block text-sm text-slate-700 dark:text-slate-300">
-                  All-day event
-                </label>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                    Time
+                  </label>
+                  <input
+                    type="time"
+                    required
+                    value={newEvent.time}
+                    onChange={(e) => setNewEvent({ ...newEvent, time: e.target.value })}
+                    className="w-full px-4 py-2 border border-slate-300 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary bg-white dark:bg-slate-900 text-slate-900 dark:text-white color-scheme-light dark:color-scheme-dark"
+                  />
+                </div>
               </div>
 
               <div className="flex gap-3 justify-end pt-4">
