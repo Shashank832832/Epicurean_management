@@ -11,10 +11,7 @@ const EventsList = () => {
 
   const { data: eventsResponse, isLoading } = useQuery({
     queryKey: ['events'],
-    queryFn: async () => {
-      const { data } = await api.get('/events');
-      return data;
-    }
+    queryFn: () => api.get('/events')
   });
 
   const createEventMutation = useMutation({
@@ -47,7 +44,7 @@ const EventsList = () => {
     }
   };
 
-  const events = eventsResponse?.data || [];
+  const events = eventsResponse?.data?.data || [];
 
   if (isLoading) {
     return (
