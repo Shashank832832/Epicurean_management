@@ -7,7 +7,7 @@ import api from '../services/api';
 const EventsList = () => {
   const queryClient = useQueryClient();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [newEvent, setNewEvent] = useState({ title: '', date: '', allDay: false });
+  const [newEvent, setNewEvent] = useState({ title: '', date: '', time: '', allDay: false });
 
   const { data: eventsResponse, isLoading } = useQuery({
     queryKey: ['events'],
@@ -25,16 +25,23 @@ const EventsList = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['events'] });
       setIsModalOpen(false);
-      setNewEvent({ title: '', date: '', allDay: false });
+      setNewEvent({ title: '', date: '', time: '', allDay: false });
     }
   });
 
   const handleSaveEvent = (e) => {
     e.preventDefault();
     if (newEvent.title && newEvent.date) {
+      const combinedStr = newEvent.allDay 
+        ? `${newEvent.date}T00:00:00` 
+        : `${newEvent.date}T${newEvent.time || '12:00'}:00`;
+      
+      const parsedDate = new Date(combinedStr);
+      
       createEventMutation.mutate({
         title: newEvent.title,
-        date: new Date(newEvent.date).toISOString(),
+        date: parsedDate.toISOString(),
+        endDate: newEvent.allDay ? parsedDate.toISOString() : undefined,
         allDay: newEvent.allDay
       });
     }
@@ -113,7 +120,7 @@ const EventsList = () => {
       )}
 
       {isModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-md overflow-hidden">
             <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-700">
               <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Add New Event</h3>
@@ -134,17 +141,34 @@ const EventsList = () => {
                 />
               </div>
               
-              <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                  Date
-                </label>
-                <input
-                  type="date"
-                  required
-                  value={newEvent.date}
-                  onChange={(e) => setNewEvent({ ...newEvent, date: e.target.value })}
-                  className="w-full px-4 py-2 border border-slate-300 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary bg-white dark:bg-slate-900 text-slate-900 dark:text-white color-scheme-light dark:color-scheme-dark"
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                    Date
+                  </label>
+                  <input
+                    type="date"
+                    required
+                    value={newEvent.date}
+                    onChange={(e) => setNewEvent({ ...newEvent, date: e.target.value })}
+                    className="w-full px-4 py-2 border border-slate-300 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary bg-white dark:bg-slate-900 text-slate-900 dark:text-white color-scheme-light dark:color-scheme-dark"
+                  />
+                </div>
+                
+                {!newEvent.allDay && (
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                      Time
+                    </label>
+                    <input
+                      type="time"
+                      required={!newEvent.allDay}
+                      value={newEvent.time}
+                      onChange={(e) => setNewEvent({ ...newEvent, time: e.target.value })}
+                      className="w-full px-4 py-2 border border-slate-300 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary bg-white dark:bg-slate-900 text-slate-900 dark:text-white color-scheme-light dark:color-scheme-dark"
+                    />
+                  </div>
+                )}
               </div>
 
               <div className="flex items-center">

@@ -10,24 +10,29 @@ import { Loader2 } from 'lucide-react';
 const Calendar = () => {
   const calendarRef = useRef(null);
   const queryClient = useQueryClient();
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(null);
-  const [newEvent, setNewEvent] = useState({ title: '', allDay: false });
+  const [isDayDetailsModalOpen, setIsDayDetailsModalOpen] = useState(false);
 
   const { data: eventsData, isLoading } = useQuery({
     queryKey: ['events'],
     queryFn: async () => {
       const { data } = await api.get('/events');
       // Format for FullCalendar
-      return data.data.map(event => ({
-        id: event._id,
-        title: event.title,
-        start: event.date,
-        end: event.endDate || event.date,
-        allDay: event.allDay,
-        backgroundColor: event.color || '#F97316',
-        borderColor: event.color || '#F97316'
-      }));
+      return data.data.map(event => {
+        const startStr = new Date(event.date).toISOString().slice(0, 10);
+        let endStr = event.endDate ? new Date(event.endDate).toISOString().slice(0, 10) : startStr;
+        
+        return {
+          id: event._id,
+          title: event.title,
+          start: event.date,
+          // If endDate is practically the same as date (or missing), don't pass end to FullCalendar so it renders a 1-day block correctly for allDay
+          end: (event.endDate && event.endDate !== event.date) ? event.endDate : undefined,
+          allDay: event.allDay,
+          backgroundColor: event.color || '#F97316',
+          borderColor: event.color || '#F97316',
+          originalEvent: event // store original to display in modal
+        };
+      });
     }
   });
 
@@ -70,7 +75,12 @@ const Calendar = () => {
 
   const handleDateSelect = (selectInfo) => {
     setSelectedDate(selectInfo);
-    setNewEvent(prev => ({ ...prev, allDay: selectInfo.allDay }));
+    setIsDayDetailsModalOpen(true);
+  };
+
+  const handleOpenAddEvent = () => {
+    setIsDayDetailsModalOpen(false);
+    setNewEvent(prev => ({ ...prev, allDay: selectedDate?.allDay || false }));
     setIsModalOpen(true);
   };
 
@@ -79,7 +89,7 @@ const Calendar = () => {
       id: dropInfo.event.id,
       eventData: {
         date: dropInfo.event.startStr,
-        endDate: dropInfo.event.endStr,
+        endDate: dropInfo.event.endStr || dropInfo.event.startStr,
         allDay: dropInfo.event.allDay
       }
     });
@@ -108,6 +118,15 @@ const Calendar = () => {
       calendarApi.unselect();
     }
   };
+
+  // Filter events for the selected date in the modal
+  const dayEvents = selectedDate 
+    ? combinedEvents.filter(e => {
+        const eventStart = new Date(e.start || e.date).setHours(0,0,0,0);
+        const selectedStart = new Date(selectedDate.startStr).setHours(0,0,0,0);
+        return eventStart === selectedStart;
+      })
+    : [];
 
   if (isLoading) {
     return (
@@ -140,7 +159,7 @@ const Calendar = () => {
             editable={true}
             selectable={true}
             selectMirror={true}
-            dayMaxEvents={true}
+            dayMaxEvents={false} /* Disabled overflow limit */
             weekends={true}
             events={combinedEvents}
             select={handleDateSelect}
@@ -151,8 +170,54 @@ const Calendar = () => {
         </div>
       </div>
 
+      {/* Day Details Modal */}
+      {isDayDetailsModalOpen && selectedDate && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-md overflow-hidden">
+            <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+                Schedule for {new Date(selectedDate.startStr).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
+              </h3>
+            </div>
+            <div className="p-6">
+              <div className="space-y-4 max-h-64 overflow-y-auto pr-2 mb-6">
+                {dayEvents.length === 0 ? (
+                  <p className="text-slate-500 text-center py-4">No events scheduled for this day.</p>
+                ) : (
+                  dayEvents.map(evt => (
+                    <div key={evt.id} className="p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg border-l-4" style={{ borderColor: evt.backgroundColor || '#F97316' }}>
+                      <p className="font-bold text-slate-800 dark:text-slate-200">{evt.title}</p>
+                      <p className="text-xs text-slate-500 mt-1">
+                        {evt.allDay ? 'All Day' : new Date(evt.start || evt.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    </div>
+                  ))
+                )}
+              </div>
+              
+              <div className="flex gap-3 justify-end pt-4 border-t border-slate-200 dark:border-slate-700">
+                <button
+                  type="button"
+                  onClick={() => setIsDayDetailsModalOpen(false)}
+                  className="px-4 py-2 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                >
+                  Close
+                </button>
+                <button
+                  onClick={handleOpenAddEvent}
+                  className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors"
+                >
+                  + Add Event
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add New Event Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-md overflow-hidden">
             <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-700">
               <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Add New Event</h3>
