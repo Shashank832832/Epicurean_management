@@ -7,7 +7,7 @@ import api from '../services/api';
 const EventsList = () => {
   const queryClient = useQueryClient();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [newEvent, setNewEvent] = useState({ title: '', date: '', time: '' });
+  const [newEvent, setNewEvent] = useState({ title: '', date: '', startTime: '', endTime: '' });
 
   const { data: eventsResponse, isLoading } = useQuery({
     queryKey: ['events'],
@@ -22,19 +22,20 @@ const EventsList = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['events'] });
       setIsModalOpen(false);
-      setNewEvent({ title: '', date: '', time: '' });
+      setNewEvent({ title: '', date: '', startTime: '', endTime: '' });
     }
   });
 
   const handleSaveEvent = (e) => {
     e.preventDefault();
-    if (newEvent.title && newEvent.date && newEvent.time) {
-      const combinedStr = `${newEvent.date}T${newEvent.time}:00`;
-      const parsedDate = new Date(combinedStr);
+    if (newEvent.title && newEvent.date && newEvent.startTime && newEvent.endTime) {
+      const startStr = `${newEvent.date}T${newEvent.startTime}:00`;
+      const endStr = `${newEvent.date}T${newEvent.endTime}:00`;
       
       createEventMutation.mutate({
         title: newEvent.title,
-        date: parsedDate.toISOString(),
+        date: new Date(startStr).toISOString(),
+        endDate: new Date(endStr).toISOString(),
       });
     }
   };
@@ -84,7 +85,12 @@ const EventsList = () => {
               <div className="space-y-2 mt-4 text-sm text-slate-600 dark:text-slate-400">
                 <div className="flex items-center gap-2">
                   <CalendarDays size={16} className="text-slate-400" />
-                  <span>{new Date(event.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                  <span>
+                    {new Date(event.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
+                    {' '}
+                    {new Date(event.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    {event.endDate && event.endDate !== event.date ? ` - ${new Date(event.endDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : ''}
+                  </span>
                 </div>
                 {event.venue && (
                   <div className="flex items-center gap-2">
@@ -146,17 +152,31 @@ const EventsList = () => {
                   />
                 </div>
                 
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                    Time
-                  </label>
-                  <input
-                    type="time"
-                    required
-                    value={newEvent.time}
-                    onChange={(e) => setNewEvent({ ...newEvent, time: e.target.value })}
-                    className="w-full px-4 py-2 border border-slate-300 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary bg-white dark:bg-slate-900 text-slate-900 dark:text-white color-scheme-light dark:color-scheme-dark"
-                  />
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                      Start Time
+                    </label>
+                    <input
+                      type="time"
+                      required
+                      value={newEvent.startTime}
+                      onChange={(e) => setNewEvent({ ...newEvent, startTime: e.target.value })}
+                      className="w-full px-4 py-2 border border-slate-300 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary bg-white dark:bg-slate-900 text-slate-900 dark:text-white color-scheme-light dark:color-scheme-dark"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                      End Time
+                    </label>
+                    <input
+                      type="time"
+                      required
+                      value={newEvent.endTime}
+                      onChange={(e) => setNewEvent({ ...newEvent, endTime: e.target.value })}
+                      className="w-full px-4 py-2 border border-slate-300 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary bg-white dark:bg-slate-900 text-slate-900 dark:text-white color-scheme-light dark:color-scheme-dark"
+                    />
+                  </div>
                 </div>
               </div>
 

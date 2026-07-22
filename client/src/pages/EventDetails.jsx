@@ -68,14 +68,21 @@ const EventDetails = () => {
       const hh = String(d.getHours()).padStart(2, '0');
       const min = String(d.getMinutes()).padStart(2, '0');
 
+      let endHh = hh;
+      let endMin = min;
+      if (eventData.endDate) {
+        const ed = new Date(eventData.endDate);
+        endHh = String(ed.getHours()).padStart(2, '0');
+        endMin = String(ed.getMinutes()).padStart(2, '0');
+      }
+      
       setEditFormData({
         title: eventData.title,
-        objective: eventData.objective || '',
-        theme: eventData.theme || '',
         description: eventData.description || '',
         venue: eventData.venue || '',
         date: `${yyyy}-${mm}-${dd}`,
-        time: `${hh}:${min}`,
+        startTime: `${hh}:${min}`,
+        endTime: `${endHh}:${endMin}`,
         expectedParticipants: eventData.expectedParticipants || 0,
         status: eventData.status
       });
@@ -96,13 +103,14 @@ const EventDetails = () => {
 
   const handleEditSubmit = (e) => {
     e.preventDefault();
-    if (editFormData.date && editFormData.time) {
-      const combinedStr = `${editFormData.date}T${editFormData.time}:00`;
-      const parsedDate = new Date(combinedStr);
+    if (editFormData.date && editFormData.startTime && editFormData.endTime) {
+      const startStr = `${editFormData.date}T${editFormData.startTime}:00`;
+      const endStr = `${editFormData.date}T${editFormData.endTime}:00`;
       
       const updatedData = {
         ...editFormData,
-        date: parsedDate.toISOString(),
+        date: new Date(startStr).toISOString(),
+        endDate: new Date(endStr).toISOString(),
       };
       
       updateEventMutation.mutate(updatedData);
@@ -156,6 +164,7 @@ const EventDetails = () => {
           <Calendar size={18} className="text-primary" />
           <span className="font-medium text-slate-800 dark:text-slate-200">
             {new Date(eventData.date).toLocaleDateString()} {new Date(eventData.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            {eventData.endDate && eventData.endDate !== eventData.date ? ` - ${new Date(eventData.endDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : ''}
           </span>
         </div>
         {eventData.venue && (
@@ -216,7 +225,7 @@ const EventDetails = () => {
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-700 sticky top-0 bg-white dark:bg-slate-800 z-10">
-              <h3 className="text-xl font-bold text-slate-900 dark:text-white">Edit Event Details</h3>
+              <h3 className="text-xl font-bold text-slate-900 dark:white">Edit Event Details</h3>
             </div>
             
             <form onSubmit={handleEditSubmit} className="p-6 space-y-5">
@@ -226,15 +235,21 @@ const EventDetails = () => {
                   <input type="text" required value={editFormData.title} onChange={(e) => setEditFormData({ ...editFormData, title: e.target.value })} className="w-full px-4 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-white" />
                 </div>
                 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                   <div>
                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Date</label>
                     <input type="date" required value={editFormData.date || ''} onChange={(e) => setEditFormData({ ...editFormData, date: e.target.value })} className="w-full px-4 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-white color-scheme-light dark:color-scheme-dark" />
                   </div>
                   
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Time</label>
-                    <input type="time" required value={editFormData.time || ''} onChange={(e) => setEditFormData({ ...editFormData, time: e.target.value })} className="w-full px-4 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-white color-scheme-light dark:color-scheme-dark" />
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Start Time</label>
+                      <input type="time" required value={editFormData.startTime || ''} onChange={(e) => setEditFormData({ ...editFormData, startTime: e.target.value })} className="w-full px-4 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-white color-scheme-light dark:color-scheme-dark" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">End Time</label>
+                      <input type="time" required value={editFormData.endTime || ''} onChange={(e) => setEditFormData({ ...editFormData, endTime: e.target.value })} className="w-full px-4 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-white color-scheme-light dark:color-scheme-dark" />
+                    </div>
                   </div>
                 </div>
                 
