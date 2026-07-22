@@ -17,9 +17,6 @@ const Calendar = () => {
     queryFn: () => api.get('/events'),
     select: (res) => {
       return (res?.data?.data || []).map(event => {
-        const startStr = new Date(event.date).toISOString().slice(0, 10);
-        let endStr = event.endDate ? new Date(event.endDate).toISOString().slice(0, 10) : startStr;
-        
         return {
           id: event._id,
           title: event.title,
